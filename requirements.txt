@@ -1,7 +1,8 @@
 cachetools==5.3.0
+dataclasses_json==0.5.9
 Flask==2.2.2
 Jinja2==3.1.2
-nested_lookup==0.2.25
-Pillow==9.5.0
+Pillow==10.0.0
+PyYAML==6.0
 requests==2.22.0
 telegrambots==0.0.13rc0
