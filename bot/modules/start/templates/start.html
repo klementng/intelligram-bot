@@ -1,0 +1,9 @@
+<b>Available Modules:</b><br/>
+{%- for mod in MODULES.keys()-%}
+<p>
+{{loop.index}}: <u>{{mod}}</u>
+<br>
+<pre>{{MODULES[mod].description}}</pre>
+</p>
+{%- endfor -%}
+<p><b>Privacy Warning: The data stored on the server is at your own risk. All modules (except /start) will have a database entry linked to your telegram user id</b></p>

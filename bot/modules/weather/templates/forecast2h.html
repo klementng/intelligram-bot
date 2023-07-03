@@ -1,0 +1,12 @@
+<p>
+    <b>{{title|title}}</b>
+    <br>
+    <i>> Updated: {{update_timestamp|format_iso_time}} (UTC+8)</i>
+</p>
+  
+{%- for f in forecasts -%}
+<p>
+<pre>Area: {{f["area"]}}
+  Forecast: {{f["forecast"]}}</pre>
+</p>
+{%- endfor -%}
