@@ -10,6 +10,7 @@ logging.basicConfig(format= "[%(asctime)s] [%(levelname)-5s] [%(name)-20s] -- %(
 logging.getLogger('werkzeug').disabled = True
 logging.getLogger().setLevel(logging.DEBUG)
 
+os.environ["BOT_CONFIG_DIR"] = os.getenv('BOT_CONFIG_DIR',"/config")
 if os.getenv("BOT_TOKEN") == None:
     raise EnvironmentError("The Environmental Variable BOT_TOKEN is required")
 
