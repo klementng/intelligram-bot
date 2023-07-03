@@ -103,7 +103,7 @@ class CatGPTModule(BaseModule):
             return await self._text_response("CAT: Meow?")
 
         else:
-            gif, text = await self._fetch_meow_api()
+            gif, text = await self._catgpt_meow_fetch_api()
             await self.session.async_update_state(self.args[0:3], True)
 
             return await self._catgpt_split_send_response(text, gif)
@@ -219,7 +219,7 @@ class CatGPTModule(BaseModule):
             return await self._catgpt_meow_response()
 
         elif self.args[2] == "ai":
-            return await self._get_ai_response()
+            return await self._catgpt_ai_response()
 
     async def _catgpt_settings_response(self):
         assert self.args[1] == "settings"
