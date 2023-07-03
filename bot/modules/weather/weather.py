@@ -78,7 +78,7 @@ class WeatherModule(BaseModule):
         if chosen_area != None and "gps=" in chosen_area:
             try:
                 gps = str(self.args[2]).removeprefix("gps=").split(",")
-                loc_obj = Location(gps[1], gps[0])
+                loc_obj = Location(float(gps[1]), float(gps[0]))
 
             except Exception as e:
                 return await self._exception_response(text=f"Invalid GPS Coord\n\n{e}")
@@ -125,7 +125,7 @@ class WeatherModule(BaseModule):
             possible_areas = difflib.get_close_matches(
                 chosen_area, [a_dict["name"] for a_dict in area_list], 10, 0.1)
             possible_areas = ["<pre>"+s+"</pre>" for s in possible_areas]
-            return await self._text_response(f"\nUnknown region: '{chosen_area}'\n\nDid you mean:\n- "+"\n- ".join(possible_areas) + "\n\nYou may enter again:")
+            return await self._text_response(f"\nUnknown region: '{chosen_area}'\n\nDid you mean:\n- "+"\n- ".join(possible_areas) + "\n\nYou may enter again:",args=self.args[0:2])
 
         # Render output
         text = render_response_template(
