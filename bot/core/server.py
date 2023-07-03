@@ -119,7 +119,9 @@ def setup(modules):
 
     try:
         # Setup self-signed ssl certs for webhook operations
-        if not os.path.isfile(CERT_PATH) or not os.path.isfile(KEY_PATH):
+        
+        if CERT_PATH==None or KEY_PATH==None or not os.path.isfile(CERT_PATH) or not os.path.isfile(KEY_PATH):
+            
             log.info(
                 "ssl cert or key path not set. Using default values ssl/cert.pem & ssl/key.pem")
 
