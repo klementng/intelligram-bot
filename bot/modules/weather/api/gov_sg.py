@@ -7,26 +7,7 @@ from io import BytesIO
 
 from datetime import datetime, timedelta
 
-import datetime as dt
-from datetime import datetime
-
-def round_datetime(tm:datetime, delta:int) -> datetime:
-    """
-    Round down Datatime object to the nearest {delta} mins
-    Args:
-        tm: datetime object
-        delta: nearest mins to round to
-    Return:
-        Rounded down datetime object
-    """
-
-    tm = tm - dt.timedelta(
-        minutes=tm.minute % delta,
-        seconds=tm.second,
-        microseconds=tm.microsecond
-    )
-    
-    return tm
+from bot.helper.datetime import round_datetime_mins
 
 
 @cachetools.func.ttl_cache(ttl=60)
@@ -111,7 +92,7 @@ def get_rainmap(dt: datetime = datetime.now()) -> tuple[datetime, bytes]:
         requests.HTTPError: API error
     """
 
-    return _rainmap_sitch_images(round_datetime(dt, 5))
+    return _rainmap_stich_images(round_datetime_mins(dt, 5))
 
 
 @cachetools.func.mru_cache()
@@ -133,8 +114,8 @@ def _rainmap_static_images():
     return tuple(images)
 
 
-def _rainmap__overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
-    time = round_datetime(time, 5)  # round to nearest 5mins
+def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
+    time = round_datetime_mins(time, 5)  # round to nearest 5mins
 
     url = f"http://www.weather.gov.sg/files/rainarea/50km/v2/dpsri_70km_{time.strftime('%Y%m%d%H%M')}0000dBR.dpsri.png"
     r = requests.get(url, stream=True)
@@ -144,19 +125,19 @@ def _rainmap__overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
         return time, Image.open(r.raw)
 
     elif max_it > 0:
-        return _rainmap__overlay(time - timedelta(minutes=5),max_it - 1)
+        return _rainmap_overlay(time - timedelta(minutes=5),max_it - 1)
 
     else:
         # Max iterations
         r.status_code = 404  # Force HTTP error to raise
         r.raise_for_status()
         raise requests.HTTPError(404,"API Error")
-    
-@cachetools.func.ttl_cache(ttl=60)
-def _rainmap_sitch_images(time: datetime) -> tuple[datetime, bytes]:
-    static_images = _rainmap_static_images()
 
-    rainmap_time, overlay = _rainmap__overlay(time)
+@cachetools.func.ttl_cache(ttl=60)
+def _rainmap_stich_images(time: datetime) -> tuple[datetime, bytes]:
+    rainmap_time, overlay = _rainmap_overlay(time)
+
+    static_images = _rainmap_static_images()
     base = static_images[0].convert("RGBA")
     town = static_images[1].resize(base.size).convert("RGBA")
     overlay = overlay.resize(base.size).convert("RGBA")
