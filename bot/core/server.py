@@ -56,8 +56,7 @@ PUBLISHED_PORT = int(os.getenv('BOT_SERVER_PUBLISHED_PORT', 88))
 SERVER_PORT = int(os.getenv('BOT_SERVER_PORT', 88))
 
 # For standalone operation
-IS_STANDALONE = True if os.getenv(
-    "BOT_SERVER_IS_STANDALONE", 'true').lower() == 'true' else False
+IS_STANDALONE = True if os.getenv("BOT_SERVER_IS_STANDALONE", 'true').lower() == 'true' else False
 PUBLISHED_URL = os.getenv('PUBLISHED_URL', f"https://{HOSTNAME}:{PUBLISHED_PORT}/")
 
 # Default values are set later
@@ -156,9 +155,10 @@ def request_handler():
 def run(debug=False):
     """Starts the flask http server"""
 
-    if _SETUP_COMPLETED and db._SETUP_COMPLETED:
-        flask.run("0.0.0.0", port=SERVER_PORT, debug=debug, ssl_context=(
-            CERT_PATH, KEY_PATH))
+    if _SETUP_COMPLETED and db._SETUP_COMPLETED and IS_STANDALONE:
+        flask.run("0.0.0.0", port=SERVER_PORT, debug=debug, ssl_context=(CERT_PATH, KEY_PATH))
+    elif _SETUP_COMPLETED and db._SETUP_COMPLETED:
+        flask.run("0.0.0.0",port=SERVER_PORT)
     else:
         log.fatal(
             "Failed to setup bot, run server.setup() and db.setup() first", exc_info=True)
