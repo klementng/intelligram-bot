@@ -91,6 +91,7 @@ def get_rainmap(dt: datetime = datetime.now()) -> tuple[datetime, bytes]:
     Raises:
         requests.HTTPError: API error
     """
+    print(datetime.now())
     
     return _rainmap_stich_images(round_datetime_mins(dt, 5))
 
