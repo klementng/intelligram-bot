@@ -13,7 +13,7 @@ class StartModule(BaseModule):
     description = "Show All Modules"
     
     @classmethod
-    async def get_response(cls, *args, **kwargs) -> list[TelegramBotsMethod]:
+    async def handle_request(cls, **kwargs) -> list[TelegramBotsMethod]:
         """
         Get replies for commands:
 
@@ -29,7 +29,7 @@ class StartModule(BaseModule):
             KeyError: Missing kwargs
         """
 
-        assert (args[0] == cls.hook)  # Sanity check
+        args = kwargs['text'].split(" ")
 
         text = render_response_template(
             "start/templates/start.html", MODULES=bot.core.server.ENABLED_MODULES)
@@ -39,6 +39,9 @@ class StartModule(BaseModule):
         ] for x in bot.core.server.ENABLED_MODULES.keys()][1:])
 
 
-        return await cls(*args,**kwargs)._text_response(text,reply_markup)
+        res = await cls(*args,**kwargs)._text_response(text,reply_markup)
+        async with kwargs['client'] as client:
+            for r in res:
+                await client(r)
 
 

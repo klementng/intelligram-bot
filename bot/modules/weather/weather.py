@@ -251,27 +251,30 @@ class WeatherModule(BaseModule):
         return await self._photo_response(photo, "rainmap.png", caption=caption, reply_markup=reply_markup)
 
     @classmethod
-    async def get_response(cls, *args, **kwargs) -> list[TelegramBotsMethod]:
+    async def handle_request(cls, **kwargs) -> list[TelegramBotsMethod]:
         """
         Get replies for commands
         """
+        args = kwargs['text'].split(" ")
 
         assert (args[0] == cls.hook)  # Sanity check
 
-        cls_instance = cls(*args, **kwargs)
+        slf = cls(*args, **kwargs)
+        await slf.session.async_update_state(args,False)
 
         if len(args) == 1:
-            return await cls_instance._weather_hook_response()
-
-        elif len(args) >= 2:
-
-            sub_module = '_weather_%s_response' % args[1]
-
-            if hasattr(cls_instance, sub_module):
-                return await getattr(cls_instance, sub_module)()
-
-            else:
-                return await cls_instance._exception_response(f"Invalid arguments: {args[1:]}")
+            res = await slf._weather_hook_response()
 
         else:
-            raise Exception("This should never happen")
+            sub_module = '_weather_%s_response' % args[1]
+
+            if hasattr(slf, sub_module):
+                res = await getattr(slf, sub_module)()
+
+            else:
+                res = await slf._exception_response(f"Invalid arguments: {args[1:]}")
+        
+        async with slf.client as client:
+            for r in res:
+                await client(r)
+

@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import shlex
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 
@@ -243,7 +244,7 @@ class ShortcutsModule(BaseModule):
             return await self._text_response(f"Not enough arguments, expected > 3, got {self.argc}", args=self.args[0:2])
 
         action = self.args[2].lower()
-
+        await self.session.async_update_state(self.args[0:2], True)
         if action == "add":
             return await self._shortcuts_add_response()
 
@@ -270,8 +271,21 @@ class ShortcutsModule(BaseModule):
 
         return await self._text_response(msg)
 
+    async def _shortcuts_hook_response(self):
+        reply_markup = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "Show", callback_data=f"{self.hook} show"),
+            InlineKeyboardButton(
+                "Modify", callback_data=f"{self.hook} modify"),
+            InlineKeyboardButton(
+                "Help", callback_data=f"{self.hook} help")
+        ]])
+
+        return await self._text_response(f"Select an option", reply_markup)
+
+
     @classmethod
-    async def get_response(cls, *args, **kwargs) -> list[TelegramBotsMethod]:
+    async def handle_request(cls, **kwargs) -> list[TelegramBotsMethod]:
         """
         Get replies for commands:
 
@@ -286,35 +300,34 @@ class ShortcutsModule(BaseModule):
         Raises:
             ValueError: chat_id does not exist / not an int
         """
-        class_instance = cls(*args,**kwargs)
 
-        assert (args[0] == class_instance.hook)  # Sanity check
+        args = shlex.split(kwargs['text'])
 
-        if len(class_instance.args) == 1:
+        slf = cls(*args,**kwargs)
+        await slf.session.async_update_state(args,False)
 
-            reply_markup = InlineKeyboardMarkup([[
-                InlineKeyboardButton(
-                    "Show", callback_data=f"{class_instance.hook} show"),
-                InlineKeyboardButton(
-                    "Modify", callback_data=f"{class_instance.hook} modify"),
-                InlineKeyboardButton(
-                    "Help", callback_data=f"{class_instance.hook} help")
-            ]])
+        assert (args[0] == slf.hook)
 
-            return await class_instance._text_response(f"Select an option", reply_markup)
+        if len(slf.args) == 1:
+            res = await slf._shortcuts_hook_response()
 
         else:
-            class_instance.command_list = await class_instance._db_get()
+            slf.command_list = await slf._db_get()
             try:
-                return await getattr(class_instance, '_shortcuts_%s_response' % args[1])()
+                res =  await getattr(slf, '_shortcuts_%s_response' % args[1])()
 
             except AttributeError:
-                return await class_instance._exception_response(f"Unexpected argument: '{args[1]}'",args=class_instance.args[0:1])
+                res = await slf._exception_response(f"Unexpected argument: '{args[1]}'",args=slf.args[0:1])
+        
+        async with slf.client as client:
+            for r in res:
+                await client(r)
 
 
 class ScShow(ShortcutsModule):
     hook = "/scshow"
     description = "Show Saved Shortcuts"
 
-    async def get_response(self, *args, **kwargs) -> list[TelegramBotsMethod]:
-        return await ShortcutsModule.get_response(*[ShortcutsModule.hook, "show"], **kwargs)
+    async def handle_request(self, **kwargs) -> list[TelegramBotsMethod]:
+        kwargs['text'] = f'{ShortcutsModule.hook} show'
+        return await ShortcutsModule.handle_request(**kwargs)

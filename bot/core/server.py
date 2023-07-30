@@ -58,6 +58,7 @@ SERVER_PORT = int(os.getenv('BOT_SERVER_PORT', 88))
 # For standalone operation
 IS_STANDALONE = True if os.getenv(
     "BOT_SERVER_IS_STANDALONE", 'true').lower() == 'true' else False
+PUBLISHED_URL = os.getenv('PUBLISHED_URL', f"https://{HOSTNAME}:{PUBLISHED_PORT}/")
 
 # Default values are set later
 CERT_PATH = os.getenv('BOT_SERVER_CERT_PATH')
@@ -103,13 +104,12 @@ def setup(modules):
                           "/C=US/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN={HOSTNAME}"')
 
             with open(CERT_PATH) as cert:
-                url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={HOSTNAME}:{PUBLISHED_PORT}'
+                url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={PUBLISHED_URL}'
                 requests.post(
                     url, files={'certificate': cert}).raise_for_status()
         
         else:
-            # i.e. behind a reverse proxy
-            url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={HOSTNAME}:{PUBLISHED_PORT}'
+            url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={PUBLISHED_URL}'
             requests.post(url).raise_for_status()
 
         # Setup commands in telegram
