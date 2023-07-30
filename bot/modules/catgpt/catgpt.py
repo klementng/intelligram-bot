@@ -1,5 +1,6 @@
 import bot.modules.weather.api.gov_sg as api
 import io
+import os
 import yaml
 import json
 import datetime
@@ -19,11 +20,12 @@ from ..base import BaseModule
 from bot.core.objects import UserSession
 import bot.core.database as db
 
-
-
 import pickle
 from dataclasses import dataclass, KW_ONLY
 from dataclasses_json import dataclass_json, DataClassJsonMixin
+
+CATGPT_AUTH = os.getenv('BOT_CATGPT_AUTH')
+CATGPT_EMAIL = os.getenv('BOT_CATGPT_EMAIL')
 
 
 @dataclass
@@ -109,14 +111,23 @@ class CatGPTModule(BaseModule):
             return await self._catgpt_split_send_response(text, gif)
 
     async def _catgpt_ai_fetch_api(self, prompt: str):
-        headers = {
+        
+        if CATGPT_AUTH != None and CATGPT_EMAIL != None:
+            email = CATGPT_EMAIL
+            headers = {
             "Authorization": self.settings.Authorization,
             "Content-Type": "application/json",
-        }
+            }
+        else:
+            email = self.settings.email
+            headers = {
+                "Authorization": self.settings.Authorization,
+                "Content-Type": "application/json",
+            }
 
         if self.settings.isNewThread == True:
             payload = json.dumps(
-                {"userPrompt": "", "email": self.settings.email, "threadId": self.settings.threadId, "userRequests": [
+                {"userPrompt": "", "email": email, "threadId": self.settings.threadId, "userRequests": [
                     {"role": "system", "content": "Respond to whatever I say here as if you’re a sassy cat that cares about me but doesn’t want me to know, and you want to be helpful but you want me to want you to be helpful. Make sure to sprinkle in some meows every now and then, especially when replacing words like now and how."},
                     {"role": "user", "content": str(self.settings.threadId) + " " + prompt}], "isNewThread": True
                  }
