@@ -152,7 +152,7 @@ class CatGPTModule(BaseModule):
         return f"https://www.cat-gpt.com/cats/gif?{datetime.datetime.now().microsecond}", text
 
     async def _catgpt_ai_session(self):
-        if self.settings.email == None or self.settings.Authorization == None:
+        if (CATGPT_EMAIL == None or CATGPT_AUTH == None) and (self.settings.email == None or self.settings.Authorization == None):
 
             reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton(
                 "Update Settings", callback_data=f"{self.hook} settings")]])
