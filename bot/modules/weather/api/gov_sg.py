@@ -134,7 +134,6 @@ def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
         r.raise_for_status()
         raise requests.HTTPError(404,"API Error")
 
-@cachetools.func.fifo_cache(maxsize=1)
 def _rainmap_stich_images(time: datetime) -> tuple[datetime, bytes]:
     rainmap_time, overlay = _rainmap_overlay(time)
 
