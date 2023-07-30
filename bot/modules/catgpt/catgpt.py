@@ -115,7 +115,7 @@ class CatGPTModule(BaseModule):
         if CATGPT_AUTH != None and CATGPT_EMAIL != None:
             email = CATGPT_EMAIL
             headers = {
-            "Authorization": self.settings.Authorization,
+            "Authorization": CATGPT_AUTH,
             "Content-Type": "application/json",
             }
         else:
