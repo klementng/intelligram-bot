@@ -57,7 +57,7 @@ SERVER_PORT = int(os.getenv('BOT_SERVER_PORT', 88))
 
 # For standalone operation
 IS_STANDALONE = True if os.getenv("BOT_SERVER_IS_STANDALONE", 'true').lower() == 'true' else False
-PUBLISHED_URL = os.getenv('PUBLISHED_URL', f"https://{HOSTNAME}:{PUBLISHED_PORT}/")
+PUBLISHED_URL = os.getenv('BOT_SERVER_PUBLISHED_URL', f"https://{HOSTNAME}:{PUBLISHED_PORT}/")
 
 # Default values are set later
 CERT_PATH = os.getenv('BOT_SERVER_CERT_PATH')
