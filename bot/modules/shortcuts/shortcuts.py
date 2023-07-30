@@ -328,6 +328,7 @@ class ScShow(ShortcutsModule):
     hook = "/scshow"
     description = "Show Saved Shortcuts"
 
-    async def handle_request(self, **kwargs) -> list[TelegramBotsMethod]:
+    @classmethod
+    async def handle_request(cls, **kwargs) -> list[TelegramBotsMethod]:
         kwargs['text'] = f'{ShortcutsModule.hook} show'
         return await ShortcutsModule.handle_request(**kwargs)
