@@ -5,7 +5,7 @@ from PIL import Image
 from io import BytesIO
 
 
-from datetime import datetime, timedelta
+import datetime
 
 from bot.helper.datetime import round_datetime_mins
 
@@ -80,8 +80,8 @@ def get_forecast_4d() -> dict:
     
     return api_dict 
 
-
-def get_rainmap(dt: datetime = datetime.now()) -> tuple[datetime, bytes]:
+@cachetools.func.ttl_cache(60)
+def get_rainmap(dt: datetime = datetime.datetime.now()) -> tuple[datetime.datetime, bytes]:
     """
     Fetches rainmaps images from api.
 
@@ -91,7 +91,6 @@ def get_rainmap(dt: datetime = datetime.now()) -> tuple[datetime, bytes]:
     Raises:
         requests.HTTPError: API error
     """
-    print(datetime.now())
     
     return _rainmap_stich_images(round_datetime_mins(dt, 5))
 
@@ -115,7 +114,7 @@ def _rainmap_static_images():
     return tuple(images)
 
 
-def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
+def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime.datetime, Image.Image]:
     time = round_datetime_mins(time, 5)  # round to nearest 5mins
 
     url = f"http://www.weather.gov.sg/files/rainarea/50km/v2/dpsri_70km_{time.strftime('%Y%m%d%H%M')}0000dBR.dpsri.png"
@@ -126,7 +125,7 @@ def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
         return time, Image.open(r.raw)
 
     elif max_it > 0:
-        return _rainmap_overlay(time - timedelta(minutes=5),max_it - 1)
+        return _rainmap_overlay(time - datetime.timedelta(minutes=5),max_it - 1)
 
     else:
         # Max iterations
@@ -134,7 +133,7 @@ def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime, Image.Image]:
         r.raise_for_status()
         raise requests.HTTPError(404,"API Error")
 
-def _rainmap_stich_images(time: datetime) -> tuple[datetime, bytes]:
+def _rainmap_stich_images(time: datetime) -> tuple[datetime.datetime, bytes]:
     rainmap_time, overlay = _rainmap_overlay(time)
 
     static_images = _rainmap_static_images()
