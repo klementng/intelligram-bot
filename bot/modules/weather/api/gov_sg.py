@@ -80,8 +80,7 @@ def get_forecast_4d() -> dict:
     
     return api_dict 
 
-@cachetools.func.ttl_cache(60)
-def get_rainmap(dt: datetime = datetime.datetime.now()) -> tuple[datetime.datetime, bytes]:
+def get_rainmap(dt: datetime = None)-> tuple[datetime.datetime, bytes]:
     """
     Fetches rainmaps images from api.
 
@@ -91,6 +90,9 @@ def get_rainmap(dt: datetime = datetime.datetime.now()) -> tuple[datetime.dateti
     Raises:
         requests.HTTPError: API error
     """
+
+    if dt == None:
+       dt = datetime.datetime.now()
     
     return _rainmap_stich_images(round_datetime_mins(dt, 5))
 
@@ -133,6 +135,7 @@ def _rainmap_overlay(time: datetime,max_it=5) -> tuple[datetime.datetime, Image.
         r.raise_for_status()
         raise requests.HTTPError(404,"API Error")
 
+@cachetools.func.ttl_cache(60)
 def _rainmap_stich_images(time: datetime) -> tuple[datetime.datetime, bytes]:
     rainmap_time, overlay = _rainmap_overlay(time)
 
