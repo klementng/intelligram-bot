@@ -138,7 +138,7 @@ class CatGPTModule(BaseModule):
 
         else:
             payload = json.dumps(
-                {"userPrompt": "", "email": self.settings.email, "threadId": self.settings.threadId, "userRequests": [{"role": "user", "content": prompt}], "isNewThread": False})
+                {"userPrompt": "", "email": email, "threadId": threadId, "userRequests": [{"role": "user", "content": prompt}], "isNewThread": False})
 
         
         try:
@@ -195,8 +195,8 @@ class CatGPTModule(BaseModule):
         if self.argc < 5:
             return await self._catgpt_ai_session()
         
-        prompt = " ".join(self.args[4:])
         self.settings.threadId = str(self.args[3])
+        prompt = " ".join(self.args[4:])
         
         self.args = self.args[0:4]
 
