@@ -1,6 +1,6 @@
-FROM python:3.10
-
-RUN apt install openssl
+FROM python:3.10-alpine
+RUN apk add openssl
+#RUN apt install openssl
 COPY ./requirements.txt /
 RUN pip install -r /requirements.txt
 
