@@ -138,8 +138,7 @@ class CatGPTModule(BaseModule):
 
         else:
             payload = json.dumps(
-                {"userPrompt": "", "email": email, "threadId": threadId, "userRequests": [{"role": "user", "content": prompt}], "isNewThread": False})
-
+                {"userPrompt": "", "email": email, "threadId": str(self.settings.threadId), "userRequests": [{"role": "user", "content": prompt}], "isNewThread": False})
         
         try:
             re = requests.put("https://cat-gpt.com/api/conversation",data=payload, headers=headers)
