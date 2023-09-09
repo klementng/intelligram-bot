@@ -4,5 +4,5 @@ Flask==2.2.5
 Jinja2==3.1.2
 Pillow==10.0.0
 PyYAML==6.0.1
-requests==2.22.0
+requests==2.31.0
 telegrambots==0.0.13rc0
