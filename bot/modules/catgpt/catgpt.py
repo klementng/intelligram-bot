@@ -196,7 +196,8 @@ class CatGPTModule(BaseModule):
             return await self._catgpt_ai_session()
         
         prompt = " ".join(self.args[4:])
-
+        self.settings.threadId = str(self.args[3])
+        
         self.args = self.args[0:4]
 
         try:
