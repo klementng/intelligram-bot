@@ -1,4 +1,4 @@
-cachetools==5.3.0
+cachetools==5.3.1
 dataclasses_json==0.5.9
 Flask==2.2.5
 Jinja2==3.1.2
