@@ -1,6 +1,6 @@
 FROM python:3.11
-RUN apk add openssl
-#RUN apt install openssl
+#RUN apk add openssl
+RUN apt install openssl
 COPY ./requirements.txt /
 RUN pip install -r /requirements.txt
 
