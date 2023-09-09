@@ -29,11 +29,13 @@ class BaseModule:
     hook = "/base"
     description = "Base Module Object"
 
-    def __init__(self, *args, **kwargs) -> None:
-        assert (args[0] == self.hook)  # Sanity check
+    def __init__(self,*args, **kwargs) -> None:
+        
+        assert kwargs["text"].startswith(self.hook)  # Sanity check
         
         self.args = args
         self.argc = len(args)
+        self.text = kwargs["text"]
         self.tg_obj = kwargs["tg_obj"]
         self.session: UserSession = kwargs["session"]
         self.client: TelegramBotsClient = kwargs["client"]

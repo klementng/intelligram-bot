@@ -89,5 +89,15 @@ docker create \
     <td>see above</td>
     <td>null</td>
   </tr>
+  <tr>
+    <td>BOT_SERVER_IS_STANDALONE</td>
+    <td>Internal Server is a Standalone Server. Set false if using reverse proxy</td>
+    <td>true</td>
+  </tr>
+  <tr>
+    <td>BOT_SERVER_PUBLISHED_URL</td>
+    <td>Published URL</td>
+    <td>https://{HOSTNAME}:{PUBLISHED_PORT}</td>
+  </tr>
 
 </table>

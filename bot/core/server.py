@@ -55,6 +55,10 @@ HOSTNAME = os.getenv('BOT_SERVER_HOSTNAME') if os.getenv(
 PUBLISHED_PORT = int(os.getenv('BOT_SERVER_PUBLISHED_PORT', 88))
 SERVER_PORT = int(os.getenv('BOT_SERVER_PORT', 88))
 
+# For standalone operation
+IS_STANDALONE = True if os.getenv("BOT_SERVER_IS_STANDALONE", 'true').lower() == 'true' else False
+PUBLISHED_URL = os.getenv('BOT_SERVER_PUBLISHED_URL', f"https://{HOSTNAME}:{PUBLISHED_PORT}/")
+
 # Default values are set later
 CERT_PATH = os.getenv('BOT_SERVER_CERT_PATH')
 KEY_PATH = os.getenv('BOT_SERVER_KEY_PATH')
@@ -62,6 +66,64 @@ KEY_PATH = os.getenv('BOT_SERVER_KEY_PATH')
 _SETUP_COMPLETED = False
 
 flask = Flask(__name__)
+
+
+def setup(modules):
+    """
+    Configures the server
+
+    Parameters
+    ----------
+        modules: list[BaseModule]
+            list of BaseModule object
+
+    """
+    global CERT_PATH
+    global KEY_PATH
+    global ENABLED_MODULES
+
+    ENABLED_MODULES = {m.hook: m for m in modules}
+
+    try:
+
+        if IS_STANDALONE == True:
+            # Setup self-signed ssl certs for webhook operations
+            if CERT_PATH == None or KEY_PATH == None or not os.path.isfile(CERT_PATH) or not os.path.isfile(KEY_PATH):
+
+                log.info(
+                    "ssl cert or key path not set. Using default values ssl/cert.pem & ssl/key.pem")
+
+                CERT_PATH = os.path.join(CONFIG_DIR, "ssl/cert.pem")
+                KEY_PATH = os.path.join(CONFIG_DIR, "ssl/key.pem")
+
+                # Generate ssl certs
+                os.makedirs(os.path.join(CONFIG_DIR, "ssl/"), exist_ok=True)
+                os.system(f'openssl req -x509 -newkey rsa:4096 -keyout {KEY_PATH} -out {CERT_PATH} \
+                           -sha256 -days 3650 -nodes -subj \
+                          "/C=US/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN={HOSTNAME}"')
+
+            with open(CERT_PATH) as cert:
+                url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={PUBLISHED_URL}'
+                requests.post(
+                    url, files={'certificate': cert}).raise_for_status()
+        
+        else:
+            url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={PUBLISHED_URL}'
+            requests.post(url).raise_for_status()
+
+        # Setup commands in telegram
+        commands_list = [{"command": m.hook.replace(
+            "/", ""), "description": m.description} for m in modules]
+        url = f'https://api.telegram.org/bot{BOT_TOKEN}/setMyCommands'
+        requests.post(url, params={"commands": json.dumps(
+            commands_list)}).raise_for_status()
+
+    except:
+        log.fatal("Failed to setup bot", exc_info=True)
+        exit(1)
+
+    global _SETUP_COMPLETED
+    _SETUP_COMPLETED = True
 
 
 def request_callback(args):
@@ -93,60 +155,11 @@ def request_handler():
 def run(debug=False):
     """Starts the flask http server"""
 
-    if _SETUP_COMPLETED and db._SETUP_COMPLETED:
-        flask.run("0.0.0.0", port=SERVER_PORT, debug=debug, ssl_context=(
-            CERT_PATH, KEY_PATH))
+    if _SETUP_COMPLETED and db._SETUP_COMPLETED and IS_STANDALONE:
+        flask.run("0.0.0.0", port=SERVER_PORT, debug=debug, ssl_context=(CERT_PATH, KEY_PATH))
+    elif _SETUP_COMPLETED and db._SETUP_COMPLETED:
+        flask.run("0.0.0.0",port=SERVER_PORT)
     else:
-        log.fatal("Failed to setup bot, run server.setup() and db.setup() first", exc_info=True)
+        log.fatal(
+            "Failed to setup bot, run server.setup() and db.setup() first", exc_info=True)
         exit(1)
-
-
-def setup(modules):
-    """
-    Configures the server
-
-    Parameters
-    ----------
-        modules: list[BaseModule]
-            list of BaseModule object
-
-    """
-    global CERT_PATH
-    global KEY_PATH
-    global ENABLED_MODULES
-
-    ENABLED_MODULES = {m.hook: m for m in modules}
-
-    try:
-        # Setup self-signed ssl certs for webhook operations
-        
-        if CERT_PATH==None or KEY_PATH==None or not os.path.isfile(CERT_PATH) or not os.path.isfile(KEY_PATH):
-            
-            log.info(
-                "ssl cert or key path not set. Using default values ssl/cert.pem & ssl/key.pem")
-
-            CERT_PATH = os.path.join(CONFIG_DIR, "ssl/cert.pem")
-            KEY_PATH = os.path.join(CONFIG_DIR, "ssl/key.pem")
-
-            # Generate
-            os.makedirs(os.path.join(CONFIG_DIR, "ssl/"), exist_ok=True)
-            os.system(
-                f'openssl req -x509 -newkey rsa:4096 -keyout {KEY_PATH} -out {CERT_PATH} -sha256 -days 3650 -nodes -subj "/C=US/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN={HOSTNAME}"')
-
-        with open(CERT_PATH) as cert:
-            url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={HOSTNAME}:{PUBLISHED_PORT}'
-            requests.post(url, files={'certificate': cert}).raise_for_status()
-
-        # Setup commands in telegram
-        commands_list = [{"command": m.hook.replace(
-            "/", ""), "description": m.description} for m in modules]
-        url = f'https://api.telegram.org/bot{BOT_TOKEN}/setMyCommands'
-        requests.post(url, params={"commands": json.dumps(
-            commands_list)}).raise_for_status()
-
-    except Exception as e:
-        log.fatal("Failed to setup bot", exc_info=True)
-        exit(1)
-
-    global _SETUP_COMPLETED
-    _SETUP_COMPLETED = True

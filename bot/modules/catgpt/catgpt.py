@@ -1,5 +1,6 @@
 import bot.modules.weather.api.gov_sg as api
 import io
+import os
 import yaml
 import json
 import datetime
@@ -19,11 +20,12 @@ from ..base import BaseModule
 from bot.core.objects import UserSession
 import bot.core.database as db
 
-
-
 import pickle
 from dataclasses import dataclass, KW_ONLY
 from dataclasses_json import dataclass_json, DataClassJsonMixin
+
+CATGPT_AUTH = os.getenv('BOT_CATGPT_AUTH')
+CATGPT_EMAIL = os.getenv('BOT_CATGPT_EMAIL')
 
 
 @dataclass
@@ -74,9 +76,10 @@ class CatGPTModule(BaseModule):
     hook = "/catgpt"
     description = "Talk to a Cat!"
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self,*args, **kwargs) -> None:
+        super().__init__(*args,**kwargs)
         self.settings = CatGPTSettings.load_from_db(self.session.user_id)
+
 
     async def _catgpt_split_send_response(self, text: str, gif=None):
         "Send responses in a AI like way with delay"
@@ -97,8 +100,7 @@ class CatGPTModule(BaseModule):
         return f"https://www.cat-gpt.com/cats/gif?{datetime.datetime.now().microsecond}", "CAT:" + " meow" * random.randint(1, 10)
 
     async def _catgpt_meow_response(self):
-        if len(self.args) <= 3:
-
+        if self.argc <= 3:
             await self.session.async_update_state(self.args[0:3], True)
             return await self._text_response("CAT: Meow?")
 
@@ -109,14 +111,23 @@ class CatGPTModule(BaseModule):
             return await self._catgpt_split_send_response(text, gif)
 
     async def _catgpt_ai_fetch_api(self, prompt: str):
-        headers = {
-            "Authorization": self.settings.Authorization,
+        
+        if CATGPT_AUTH != None and CATGPT_EMAIL != None:
+            email = CATGPT_EMAIL
+            headers = {
+            "Authorization": CATGPT_AUTH,
             "Content-Type": "application/json",
-        }
+            }
+        else:
+            email = self.settings.email
+            headers = {
+                "Authorization": self.settings.Authorization,
+                "Content-Type": "application/json",
+            }
 
         if self.settings.isNewThread == True:
             payload = json.dumps(
-                {"userPrompt": "", "email": self.settings.email, "threadId": self.settings.threadId, "userRequests": [
+                {"userPrompt": "", "email": email, "threadId": self.settings.threadId, "userRequests": [
                     {"role": "system", "content": "Respond to whatever I say here as if you’re a sassy cat that cares about me but doesn’t want me to know, and you want to be helpful but you want me to want you to be helpful. Make sure to sprinkle in some meows every now and then, especially when replacing words like now and how."},
                     {"role": "user", "content": str(self.settings.threadId) + " " + prompt}], "isNewThread": True
                  }
@@ -141,14 +152,14 @@ class CatGPTModule(BaseModule):
         return f"https://www.cat-gpt.com/cats/gif?{datetime.datetime.now().microsecond}", text
 
     async def _catgpt_ai_session(self):
-        if self.settings.email == None or self.settings.Authorization == None:
+        if (CATGPT_EMAIL == None or CATGPT_AUTH == None) and (self.settings.email == None or self.settings.Authorization == None):
 
             reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton(
                 "Update Settings", callback_data=f"{self.hook} settings")]])
 
             return await self._text_response(f"Missing email/api auth header, update setting to use ai mode", reply_markup)
 
-        elif len(self.args) == 3:
+        elif self.argc == 3:
             reply_markup = InlineKeyboardMarkup(
                 [
                     [
@@ -162,7 +173,7 @@ class CatGPTModule(BaseModule):
 
             return await self._text_response(f"New or Resume Session", reply_markup)
 
-        elif len(self.args) == 4:
+        elif self.argc == 4:
 
             if self.args[3] == "resume" and self.settings.threadId != None:
                 thread_id = self.settings.threadId
@@ -173,8 +184,7 @@ class CatGPTModule(BaseModule):
                 self.settings.isNewThread = True
                 await self.settings.async_update_db(self.session.user_id)
 
-            self.args = self.args[0:3] + \
-                (thread_id,)  # new args with thread_id
+            self.args = self.args[0:3] + (thread_id,)
 
             await self.session.async_update_state(self.args, True)
             return await self._text_response("CAT: Meow?")
@@ -182,7 +192,7 @@ class CatGPTModule(BaseModule):
     async def _catgpt_ai_response(self):
         assert self.args[2] == "ai"
 
-        if len(self.args) < 5:
+        if self.argc < 5:
             return await self._catgpt_ai_session()
         
         prompt = " ".join(self.args[4:])
@@ -203,7 +213,7 @@ class CatGPTModule(BaseModule):
     async def _catgpt_chat_response(self):
         assert self.args[1] == "chat"
 
-        if len(self.args) < 3:
+        if self.argc < 3:
             reply_markup = InlineKeyboardMarkup(
                 [
                     [InlineKeyboardButton(
@@ -229,12 +239,12 @@ class CatGPTModule(BaseModule):
         if self.is_in_group() == True:
             return await self._text_response("Editing of settings is not allowed in group chat",args=self.args[0:2])
 
-        if len(self.args) == 2:
+        if self.argc == 2:
             self.session.update_state(self.args,True)
 
             return await self._text_response(render_response_template("catgpt/templates/settings.html",yaml_str=yaml.dump(settings)))
         
-        elif len(self.args) > 3:
+        elif self.argc > 3:
             try:
                 user_dict = yaml.safe_load(self.tg_obj.text)
                 user_setting = CatGPTSettings.from_dict(user_dict)
@@ -271,23 +281,28 @@ class CatGPTModule(BaseModule):
 
         return await self._text_response(f"Select an option", reply_markup)
 
-
     @classmethod
-    async def get_response(cls, *args, **kwargs) -> list[TelegramBotsMethod]:
+    async def handle_request(cls, **kwargs) -> list[TelegramBotsMethod]:
+        args = kwargs['text'].split(" ")
+
+        slf = cls(*args, **kwargs)
+        await slf.session.async_update_state(args,False)
+
+        if slf.argc == 1:
+            res =  await slf._catgpt_hook_response()
+
+        elif slf.args[1] == "settings":
+            res =  await slf._catgpt_settings_response()
+
+        elif slf.args[1] == "chat":
+            res =  await slf._catgpt_chat_response()
         
-        cls_instance = cls(*args, **kwargs)
-
-        if len(args) == 1:
-            return await cls_instance._catgpt_hook_response()
-
-        elif args[1] == "settings":
-            return await cls_instance._catgpt_settings_response()
-
-        elif args[1] == "chat":
-            return await cls_instance._catgpt_chat_response()
-        
-        elif args[1] == "help":
-            return await cls_instance._help_response()
+        elif slf.args[1] == "help":
+            res=  await slf._help_response()
         
         else:
-            return await cls_instance._exception_response(f"Invalid Argument: '{args[1]}'")
+            res = await slf._exception_response(f"Invalid Argument: '{slf.args[1]}'")
+
+        async with slf.client as client:
+            for r in res:
+                await client(r)
